@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	cdt "github.ibm.com/cloudant/go-cloudant"
 )
@@ -52,7 +51,7 @@ func makeClient() (*cdt.CouchClient, error) {
 		return nil, fmt.Errorf("Expected env vars COUCH_USER and COUCH_PASS to be set")
 	}
 
-	return cdt.CreateClient(username, password, "https://"+username+".cloudant.com", 5)
+	return cdt.CreateClient(username, password, "https://"+username+".cloudant.com", 4)
 }
 
 func makeDatabase() (*cdt.Database, error) {
@@ -64,10 +63,7 @@ func makeDatabase() (*cdt.Database, error) {
 	return client.GetOrCreate("enron")
 }
 
-func parseEmail(path string, uploader *cdt.Uploader, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+func parseEmail(path string, uploader *cdt.Uploader) {
 	msg, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
@@ -110,18 +106,17 @@ func main() {
 		return
 	}
 
-	bulker := enronDB.Bulk(100, 0)
-	var wg sync.WaitGroup
+	bulker := enronDB.Bulk(5000, 1024*1024, 0)
 	processedEmails := 0
 	for f := range list {
-		go parseEmail(f, bulker, &wg)
+		parseEmail(f, bulker)
 		processedEmails++
 		if processedEmails%1000 == 0 {
 			fmt.Println(".")
 		}
 	}
 
-	wg.Wait()
-
 	bulker.Stop()
+
+	fmt.Printf("Processed %d emails\n", processedEmails)
 }
