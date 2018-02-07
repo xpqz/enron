@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	cdt "github.ibm.com/cloudant/go-cloudant"
+	cdt "github.com/cloudant-labs/go-cloudant"
 )
 
 // EnronEmail ...
@@ -46,12 +46,13 @@ func findEmails(dir string) chan string {
 func makeClient() (*cdt.CouchClient, error) {
 	username := os.Getenv("COUCH_USER")
 	password := os.Getenv("COUCH_PASS")
+	hostURL := os.Getenv("COUCH_HOST_URL")
 
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("Expected env vars COUCH_USER and COUCH_PASS to be set")
+	if username == "" || password == "" || hostURL == "" {
+		return nil, fmt.Errorf("Expected env vars COUCH_USER, COUCH_PASS and COUCH_HOST_URL to be set")
 	}
 
-	return cdt.CreateClient(username, password, "https://"+username+".cloudant.com", 4)
+	return cdt.CreateClient(username, password, hostURL, 4)
 }
 
 func makeDatabase() (*cdt.Database, error) {
